@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>マネタイズ講座受講生一覧</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f8fbfe;
+    --border: #e2eef8;
+    --accent: #0747a3;
+    --accent-light: #ddf0f9;
+    --accent-mid: #3a72c8;
+    --text: #0f1f3d;
+    --text-muted: #4a6080;
+    --text-dim: #8fa8c0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+  }
+  header {
+    background: var(--accent);
+    padding: 56px 40px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 360px; height: 360px;
+    background: rgba(221,240,249,0.1);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: 30%;
+    width: 240px; height: 240px;
+    background: rgba(221,240,249,0.06);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .header-inner { max-width: 1100px; margin: 0 auto; position: relative; z-index: 1; }
+  .header-label {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--accent-light);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    opacity: 0.8;
+  }
+  h1 {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: clamp(30px, 5vw, 48px);
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 12px;
+    line-height: 1.15;
+  }
+  .header-desc {
+    font-size: 14px;
+    color: rgba(221,240,249,0.85);
+    line-height: 1.9;
+    max-width: 480px;
+  }
+  .stats {
+    display: flex;
+    gap: 40px;
+    margin-top: 36px;
+    padding-top: 28px;
+    border-top: 1px solid rgba(221,240,249,0.2);
+  }
+  .stat { display: flex; flex-direction: column; gap: 4px; }
+  .stat-num { font-family: 'Noto Sans JP', sans-serif; font-size: 30px; color: #fff; font-weight: 500; }
+  .stat-label { font-size: 11px; color: rgba(221,240,249,0.6); letter-spacing: 0.1em; }
+  .filter-wrap {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 40px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .filter-bar { max-width: 1100px; margin: 0 auto; display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 6px 18px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    background: white;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.04em;
+  }
+  .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-btn.active { background: var(--accent); color: white; border-color: var(--accent); font-weight: 500; }
+  main { max-width: 1100px; margin: 0 auto; padding: 40px 40px 80px; }
+  #loading { text-align: center; padding: 80px 0; color: var(--text-dim); font-size: 13px; letter-spacing: 0.1em; }
+  .spinner {
+    width: 24px; height: 24px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #error { display: none; text-align: center; padding: 80px 0; color: var(--text-muted); font-size: 14px; line-height: 1.9; }
+  #setup-notice {
+    background: var(--accent-light);
+    border: 1px solid #b8ddf0;
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 32px;
+    display: none;
+  }
+  #setup-notice h3 { font-size: 13px; font-weight: 500; color: var(--accent); margin-bottom: 8px; }
+  #setup-notice p { font-size: 13px; color: var(--text-muted); line-height: 1.8; }
+  #setup-notice code { background: white; border: 1px solid #b8ddf0; padding: 2px 8px; border-radius: 4px; font-size: 12px; color: var(--accent); }
+  #count { font-size: 12px; color: var(--text-dim); margin-bottom: 20px; letter-spacing: 0.05em; }
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  #grid.visible { opacity: 1; }
+  .card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+    animation: fadeUp 0.4s ease both;
+  }
+  .card:hover { box-shadow: 0 8px 32px rgba(7,71,163,0.1); transform: translateY(-2px); border-color: #b8d0f0; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .avatar {
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700;
+    color: var(--accent);
+    flex-shrink: 0;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .card-name { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+  .card-ig { font-size: 12px; color: var(--accent-mid); text-decoration: none; transition: color 0.2s; }
+  .card-ig:hover { color: var(--accent); text-decoration: underline; }
+  .card-body { display: flex; flex-direction: column; gap: 10px; }
+  .card-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; }
+  .card-row-label { color: var(--text-dim); flex-shrink: 0; }
+  .card-row-value { color: var(--text-muted); text-align: right; line-height: 1.5; }
+  .tag { display: inline-block; padding: 4px 12px; border-radius: 100px; font-size: 11px; background: var(--accent-light); color: var(--accent); font-weight: 500; letter-spacing: 0.04em; }
+  #empty { display: none; text-align: center; padding: 80px 0; color: var(--text-dim); font-size: 14px; }
+  @media (max-width: 600px) {
+    header { padding: 40px 20px 36px; }
+    .filter-wrap { padding: 14px 20px; }
+    main { padding: 28px 20px 60px; }
+    #grid { grid-template-columns: 1fr; }
+    .stats { gap: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <p class="header-label">Instagram Monetize Course</p>
+    <h1>マネタイズ講座受講生一覧</h1>
+    <p class="header-desc">マネタイズ講座の受講生一覧です。<br>気になる仲間のアカウントをチェックしてみましょう。</p>
+    <div class="stats" style="display:none"></div>
+  </div>
+</header>
+
+<div class="filter-wrap">
+  <div class="filter-bar" id="filter-bar">
+    <button class="filter-btn active" data-genre="all">すべて</button>
+  </div>
+</div>
+
+<main>
+  <div id="setup-notice">
+    <h3>⚙️ セットアップが必要です</h3>
+    <p>HTMLファイル内の <code>SHEET_URL</code> をGoogleスプレッドシートの公開URLに変更してください。</p>
+  </div>
+  <div id="loading"><div class="spinner"></div>データを読み込み中...</div>
+  <div id="error">データの読み込みに失敗しました。<br>スプレッドシートの公開設定を確認してください。</div>
+  <div id="grid"></div>
+  <div id="empty">該当する受講生が見つかりませんでした。</div>
+</main>
+
+<script>
+// ============================================================
+//  ここだけ変更してください
+//  スプレッドシートを「ウェブに公開」した後のURLを貼り付け
+// ============================================================
+const SHEET_URL = "YOUR_SHEET_URL_HERE";
+// ============================================================
+
+let allStudents = [];
+
+const GENRES = ["すべて", "レシピ", "暮らし", "ダイエット", "ライフスタイル", "美容", "DIY", "子育て", "ガジェット", "スキル", "ビジネス", "その他"];
+
+async function loadData() {
+  document.getElementById("loading").style.display = "none";
+  renderSampleData();
+  if (SHEET_URL === "YOUR_SHEET_URL_HERE") {
+    document.getElementById("setup-notice").style.display = "block";
+    return;
+  }
+  try {
+    const res = await fetch(SHEET_URL);
+    if (!res.ok) throw new Error();
+    const rows = parseCSV(await res.text()).slice(1).filter(r => r[0]?.trim());
+    allStudents = rows.map(r => ({ name:r[0]||"", ig:r[1]||"", genre:r[2]||"", month:r[3]||"", monetize:r[4]||"" }));
+    renderFilters();
+    renderCards(allStudents);
+  } catch {
+    document.getElementById("error").style.display = "block";
+  }
+}
+
+function parseCSV(text) {
+  return text.trim().split("\n").map(line => {
+    const cols = []; let cur = "", inQ = false;
+    for (const c of line) {
+      if (c === '"') { inQ = !inQ; continue; }
+      if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ""; continue; }
+      cur += c;
+    }
+    cols.push(cur.trim());
+    return cols;
+  });
+}
+
+function renderSampleData() {
+  allStudents = [
+    { name:"さくら",  ig:"@sakura_lifestyle", genre:"ライフスタイル", month:"2025年10月", monetize:"アフィリエイト" },
+    { name:"ゆいな",  ig:"@yuina_food",        genre:"料理・グルメ",   month:"2025年10月", monetize:"PR案件" },
+    { name:"けんた",  ig:"@kenta_fitness",     genre:"フィットネス",   month:"2025年11月", monetize:"自社商品販売" },
+    { name:"みほ",    ig:"@miho_travel",        genre:"旅行",           month:"2025年11月", monetize:"アフィリエイト" },
+    { name:"りな",    ig:"@rina_beauty",        genre:"美容・コスメ",   month:"2025年12月", monetize:"PR案件" },
+  ];
+  renderFilters();
+  renderCards(allStudents);
+}
+
+function renderFilters() {
+  const bar = document.getElementById("filter-bar");
+  bar.innerHTML = "";
+  GENRES.forEach(g => {
+    const btn = document.createElement("button");
+    btn.className = "filter-btn" + (g === "すべて" ? " active" : "");
+    btn.textContent = g;
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderCards(g === "すべて" ? allStudents : allStudents.filter(s => s.genre === g));
+    });
+    bar.appendChild(btn);
+  });
+}
+
+function renderCards(students) {
+  const grid = document.getElementById("grid");
+  const empty = document.getElementById("empty");
+  grid.innerHTML = "";
+  if (!students.length) {
+    empty.style.display = "block"; grid.classList.remove("visible"); return;
+  }
+  empty.style.display = "none";
+  students.forEach((s, i) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.style.animationDelay = (i * 40) + "ms";
+    const igUrl = s.ig ? "https://instagram.com/" + s.ig.replace("@","") : "#";
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="avatar">${esc(s.name?.[0]||"?")}</div>
+        <div>
+          <div class="card-name">${esc(s.name)}</div>
+          <a class="card-ig" href="${igUrl}" target="_blank" rel="noopener">${esc(s.ig)}</a>
+        </div>
+      </div>
+      <div class="card-body">
+        ${s.genre    ? `<div class="card-row"><span class="card-row-label">ジャンル</span><span class="tag">${esc(s.genre)}</span></div>` : ""}
+        ${s.month    ? `<div class="card-row"><span class="card-row-label">受講</span><span class="card-row-value">${esc(s.month)}</span></div>` : ""}
+        ${s.monetize ? `<div class="card-row"><span class="card-row-label">マネタイズ</span><span class="card-row-value">${esc(s.monetize)}</span></div>` : ""}
+      </div>`;
+    grid.appendChild(card);
+  });
+  grid.classList.add("visible");
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+loadData();
+</script>
+</body>
+</html>
