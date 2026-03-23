@@ -201,10 +201,7 @@
 </div>
 
 <main>
-  <div id="setup-notice">
-    <h3>⚙️ セットアップが必要です</h3>
-    <p>HTMLファイル内の <code>SHEET_URL</code> をGoogleスプレッドシートの公開URLに変更してください。</p>
-  </div>
+  <div id="setup-notice" style="display:none"></div>
   <div id="loading"><div class="spinner"></div>データを読み込み中...</div>
   <div id="error">データの読み込みに失敗しました。<br>スプレッドシートの公開設定を確認してください。</div>
   <div id="grid"></div>
@@ -216,25 +213,26 @@
 //  ここだけ変更してください
 //  スプレッドシートを「ウェブに公開」した後のURLを貼り付け
 // ============================================================
-const SHEET_URL = "YOUR_SHEET_URL_HERE";
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQI1o92BJ2214GWNluo_llAlhas4hmCVO8iHL_GmuGhOpLawH7j4HKz2MKa6nAOnNmzY99OMGJgDb5N/pub?gid=852473836&single=true&output=csv";
 // ============================================================
 
 let allStudents = [];
 
-const GENRES = ["すべて", "レシピ", "暮らし", "ダイエット", "ライフスタイル", "美容", "DIY", "子育て", "ガジェット", "スキル", "ビジネス", "その他"];
-
 async function loadData() {
   document.getElementById("loading").style.display = "none";
   renderSampleData();
-  if (SHEET_URL === "YOUR_SHEET_URL_HERE") {
-    document.getElementById("setup-notice").style.display = "block";
-    return;
-  }
+  if (SHEET_URL === "YOUR_SHEET_URL_HERE") return;
   try {
     const res = await fetch(SHEET_URL);
     if (!res.ok) throw new Error();
-    const rows = parseCSV(await res.text()).slice(1).filter(r => r[0]?.trim());
-    allStudents = rows.map(r => ({ name:r[0]||"", ig:r[1]||"", genre:r[2]||"", month:r[3]||"", monetize:r[4]||"" }));
+    const rows = parseCSV(await res.text()).slice(1).filter(r => r[1]?.trim());
+    allStudents = rows.map(r => ({
+      timestamp: r[0]||"",
+      name:      r[1]||"",
+      ig:        r[2]||"",
+      genre:     r[3]||"",
+      monetize:  r[4]||"",
+    }));
     renderFilters();
     renderCards(allStudents);
   } catch {
@@ -257,20 +255,21 @@ function parseCSV(text) {
 
 function renderSampleData() {
   allStudents = [
-    { name:"さくら",  ig:"@sakura_lifestyle", genre:"ライフスタイル", month:"2025年10月", monetize:"アフィリエイト" },
-    { name:"ゆいな",  ig:"@yuina_food",        genre:"料理・グルメ",   month:"2025年10月", monetize:"PR案件" },
-    { name:"けんた",  ig:"@kenta_fitness",     genre:"フィットネス",   month:"2025年11月", monetize:"自社商品販売" },
-    { name:"みほ",    ig:"@miho_travel",        genre:"旅行",           month:"2025年11月", monetize:"アフィリエイト" },
-    { name:"りな",    ig:"@rina_beauty",        genre:"美容・コスメ",   month:"2025年12月", monetize:"PR案件" },
+    { name:"さくら",  ig:"sakura_lifestyle", genre:"ライフスタイル", monetize:"アフィリエイト" },
+    { name:"ゆいな",  ig:"yuina_food",        genre:"レシピ",         monetize:"PR案件" },
+    { name:"けんた",  ig:"kenta_fitness",     genre:"ダイエット",     monetize:"自社商品" },
+    { name:"みほ",    ig:"miho_travel",        genre:"おでかけ/スポット", monetize:"アフィリエイト" },
+    { name:"りな",    ig:"rina_beauty",        genre:"美容",           monetize:"PR案件" },
   ];
   renderFilters();
   renderCards(allStudents);
 }
 
 function renderFilters() {
+  const genres = ["すべて", ...new Set(allStudents.map(s => s.genre).filter(Boolean))];
   const bar = document.getElementById("filter-bar");
   bar.innerHTML = "";
-  GENRES.forEach(g => {
+  genres.forEach(g => {
     const btn = document.createElement("button");
     btn.className = "filter-btn" + (g === "すべて" ? " active" : "");
     btn.textContent = g;
@@ -296,17 +295,17 @@ function renderCards(students) {
     card.className = "card";
     card.style.animationDelay = (i * 40) + "ms";
     const igUrl = s.ig ? "https://instagram.com/" + s.ig.replace("@","") : "#";
+    const igLabel = s.ig ? "@" + s.ig.replace("@","") : "";
     card.innerHTML = `
       <div class="card-header">
         <div class="avatar">${esc(s.name?.[0]||"?")}</div>
         <div>
           <div class="card-name">${esc(s.name)}</div>
-          <a class="card-ig" href="${igUrl}" target="_blank" rel="noopener">${esc(s.ig)}</a>
+          <a class="card-ig" href="${igUrl}" target="_blank" rel="noopener">${esc(igLabel)}</a>
         </div>
       </div>
       <div class="card-body">
         ${s.genre    ? `<div class="card-row"><span class="card-row-label">ジャンル</span><span class="tag">${esc(s.genre)}</span></div>` : ""}
-        ${s.month    ? `<div class="card-row"><span class="card-row-label">受講</span><span class="card-row-value">${esc(s.month)}</span></div>` : ""}
         ${s.monetize ? `<div class="card-row"><span class="card-row-label">マネタイズ</span><span class="card-row-value">${esc(s.monetize)}</span></div>` : ""}
       </div>`;
     grid.appendChild(card);
