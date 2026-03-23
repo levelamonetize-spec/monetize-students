@@ -213,7 +213,7 @@
 //  ここだけ変更してください
 //  スプレッドシートを「ウェブに公開」した後のURLを貼り付け
 // ============================================================
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQI1o92BJ2214GWNluo_llAlhas4hmCVO8iHL_GmuGhOpLawH7j4HKz2MKa6nAOnNmzY99OMGJgDb5N/pub?gid=852473836&single=true&output=csv";
+const SHEET_URL = "YOUR_SHEET_URL_HERE";
 // ============================================================
 
 let allStudents = [];
@@ -232,6 +232,7 @@ async function loadData() {
       ig:        r[2]||"",
       genre:     r[3]||"",
       monetize:  r[4]||"",
+      image:     r[5]||"",
     }));
     renderFilters();
     renderCards(allStudents);
@@ -282,6 +283,15 @@ function renderFilters() {
   });
 }
 
+function getDriveImageUrl(url) {
+  if (!url) return "";
+  const m = url.match(/id=([^&]+)/);
+  if (m) return "https://drive.google.com/thumbnail?id=" + m[1] + "&sz=w100";
+  const m2 = url.match(/\/d\/([^/]+)/);
+  if (m2) return "https://drive.google.com/thumbnail?id=" + m2[1] + "&sz=w100";
+  return "";
+}
+
 function renderCards(students) {
   const grid = document.getElementById("grid");
   const empty = document.getElementById("empty");
@@ -296,9 +306,13 @@ function renderCards(students) {
     card.style.animationDelay = (i * 40) + "ms";
     const igUrl = s.ig ? "https://instagram.com/" + s.ig.replace("@","") : "#";
     const igLabel = s.ig ? "@" + s.ig.replace("@","") : "";
+    const imgUrl = getDriveImageUrl(s.image);
+    const avatarHtml = imgUrl
+      ? `<img src="${imgUrl}" style="width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;" onerror="this.outerHTML='<div class=\\'avatar\\'>${esc(s.name?.[0]||"?")}</div>'">`
+      : `<div class="avatar">${esc(s.name?.[0]||"?")}</div>`;
     card.innerHTML = `
       <div class="card-header">
-        <div class="avatar">${esc(s.name?.[0]||"?")}</div>
+        ${avatarHtml}
         <div>
           <div class="card-name">${esc(s.name)}</div>
           <a class="card-ig" href="${igUrl}" target="_blank" rel="noopener">${esc(igLabel)}</a>
