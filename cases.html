@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>案件一覧 | マネタイズ講座</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f8fbfe;
+    --border: #e2eef8;
+    --accent: #0747a3;
+    --accent-light: #ddf0f9;
+    --accent-mid: #3a72c8;
+    --text: #0f1f3d;
+    --text-muted: #4a6080;
+    --text-dim: #8fa8c0;
+    --green: #1a7a4a;
+    --green-light: #e6f4ed;
+    --orange: #c45c00;
+    --orange-light: #fff3e6;
+    --pink: #b02060;
+    --pink-light: #fce8f0;
+    --purple: #6b21a8;
+    --purple-light: #f3e8ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Noto Sans JP', sans-serif; font-weight: 300; min-height: 100vh; }
+
+  /* Header */
+  header { background: var(--accent); padding: 48px 40px 40px; position: relative; overflow: hidden; }
+  header::before { content: ''; position: absolute; top: -80px; right: -80px; width: 360px; height: 360px; background: rgba(221,240,249,0.1); border-radius: 50%; pointer-events: none; }
+  header::after { content: ''; position: absolute; bottom: -60px; left: 30%; width: 240px; height: 240px; background: rgba(221,240,249,0.06); border-radius: 50%; pointer-events: none; }
+  .header-inner { max-width: 1100px; margin: 0 auto; position: relative; z-index: 1; }
+  .header-label { font-size: 11px; letter-spacing: 0.2em; color: rgba(221,240,249,0.8); text-transform: uppercase; margin-bottom: 12px; }
+  h1 { font-size: clamp(28px, 4vw, 44px); font-weight: 700; color: #fff; margin-bottom: 10px; line-height: 1.2; }
+  .header-desc { font-size: 13px; color: rgba(221,240,249,0.85); line-height: 1.9; max-width: 480px; }
+  .header-actions { margin-top: 24px; }
+  .submit-btn { display: inline-block; padding: 10px 24px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 100px; color: white; font-size: 13px; font-family: 'Noto Sans JP', sans-serif; font-weight: 500; text-decoration: none; cursor: pointer; transition: background 0.2s; }
+  .submit-btn:hover { background: rgba(255,255,255,0.25); }
+
+  /* Filter */
+  .filter-wrap { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 40px; position: sticky; top: 0; z-index: 10; }
+  .filter-section { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
+  .filter-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .filter-label { font-size: 11px; color: var(--text-dim); letter-spacing: 0.08em; min-width: 64px; flex-shrink: 0; }
+  .filter-btn { padding: 4px 14px; border-radius: 100px; border: 1px solid var(--border); background: white; color: var(--text-muted); font-size: 11px; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-btn.active { background: var(--accent); color: white; border-color: var(--accent); font-weight: 500; }
+
+  /* Sort */
+  .sort-wrap { max-width: 1100px; margin: 0 auto; padding: 20px 40px 0; display: flex; justify-content: space-between; align-items: center; }
+  .sort-label { font-size: 12px; color: var(--text-dim); }
+  .sort-select { border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 12px; font-family: 'Noto Sans JP', sans-serif; color: var(--text-muted); background: white; cursor: pointer; }
+
+  /* Main */
+  main { max-width: 1100px; margin: 0 auto; padding: 20px 40px 80px; }
+
+  /* Loading */
+  #loading { text-align: center; padding: 80px 0; color: var(--text-dim); font-size: 13px; }
+  .spinner { width: 24px; height: 24px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #error { display: none; text-align: center; padding: 80px 0; color: var(--text-muted); font-size: 14px; line-height: 1.9; }
+  #empty { display: none; text-align: center; padding: 80px 0; color: var(--text-dim); font-size: 14px; }
+
+  /* Grid */
+  #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; opacity: 0; transition: opacity 0.4s; }
+  #grid.visible { opacity: 1; }
+
+  /* Card */
+  .card { background: white; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; cursor: pointer; transition: box-shadow 0.2s, transform 0.2s; animation: fadeUp 0.4s ease both; }
+  .card:hover { box-shadow: 0 8px 32px rgba(7,71,163,0.1); transform: translateY(-2px); }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  .card-top { padding: 20px 20px 16px; }
+  .card-badges { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 500; }
+  .badge-type-アフィリエイト { background: var(--accent-light); color: var(--accent); }
+  .badge-type-固定案件 { background: var(--green-light); color: var(--green); }
+  .badge-type-TikTokShop { background: var(--pink-light); color: var(--pink); }
+  .badge-type-楽天アフィ { background: var(--orange-light); color: var(--orange); }
+  .badge-genre { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+  .card-title { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .card-asp { font-size: 12px; color: var(--text-dim); margin-bottom: 14px; }
+  .card-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .info-item { display: flex; flex-direction: column; gap: 2px; }
+  .info-label { font-size: 10px; color: var(--text-dim); letter-spacing: 0.06em; }
+  .info-value { font-size: 13px; color: var(--text-muted); }
+  .info-value.highlight { color: var(--accent); font-weight: 500; }
+  .card-bottom { padding: 12px 20px; border-top: 1px solid var(--border); background: var(--surface); display: flex; justify-content: space-between; align-items: center; }
+  .stars { color: #f0a500; font-size: 13px; letter-spacing: 1px; }
+  .detail-link { font-size: 11px; color: var(--accent); font-weight: 500; }
+
+  /* Modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; overflow-y: auto; padding: 40px 20px; }
+  .modal-overlay.open { display: block; }
+  .modal { background: white; border-radius: 16px; max-width: 680px; margin: 0 auto; overflow: hidden; }
+  .modal-header { background: var(--accent); padding: 28px 28px 24px; position: relative; }
+  .modal-close { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; font-family: 'Noto Sans JP', sans-serif; }
+  .modal-badges { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .modal-badge { padding: 3px 10px; border-radius: 100px; font-size: 11px; background: rgba(221,240,249,0.3); color: rgba(221,240,249,0.95); }
+  .modal-title { font-size: 20px; font-weight: 700; color: white; margin-bottom: 4px; }
+  .modal-asp { font-size: 13px; color: rgba(221,240,249,0.7); }
+  .modal-body { padding: 24px 28px; }
+  .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .modal-info { background: var(--surface); border-radius: 10px; padding: 14px; }
+  .modal-info-label { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; letter-spacing: 0.06em; }
+  .modal-info-value { font-size: 14px; color: var(--text); font-weight: 500; }
+  .modal-stars { font-size: 22px; color: #f0a500; margin-bottom: 16px; }
+  .modal-section { margin-bottom: 16px; }
+  .modal-section-title { font-size: 11px; font-weight: 500; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+  .modal-text { font-size: 13px; color: var(--text-muted); line-height: 1.8; background: var(--surface); border-radius: 8px; padding: 12px 14px; }
+  .modal-divider { height: 1px; background: var(--border); margin: 20px 0; }
+  .modal-poster { font-size: 12px; color: var(--text-dim); margin-top: 8px; }
+
+  /* Disqus */
+  .disqus-wrap { padding: 0 28px 28px; }
+  .disqus-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 16px; }
+  #disqus_thread { min-height: 200px; }
+
+  @media (max-width: 600px) {
+    header { padding: 36px 20px 32px; }
+    .filter-wrap { padding: 12px 20px; }
+    .sort-wrap { padding: 16px 20px 0; }
+    main { padding: 16px 20px 60px; }
+    #grid { grid-template-columns: 1fr; }
+    .modal-grid { grid-template-columns: 1fr; }
+    .modal-header { padding: 20px 20px 18px; }
+    .modal-body { padding: 20px; }
+    .disqus-wrap { padding: 0 20px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <p class="header-label">Instagram Monetize Course</p>
+    <h1>案件一覧</h1>
+    <p class="header-desc">生徒が投稿した案件情報と口コミをチェックできます。<br>気になる案件をクリックして詳細を確認しましょう。</p>
+    <div class="header-actions">
+      <a class="submit-btn" href="YOUR_FORM_URL_HERE" target="_blank">＋ 案件を投稿する</a>
+    </div>
+  </div>
+</header>
+
+<div class="filter-wrap">
+  <div class="filter-section">
+    <div class="filter-row" id="type-filter">
+      <span class="filter-label">案件タイプ</span>
+      <button class="filter-btn active" data-value="all">すべて</button>
+      <button class="filter-btn" data-value="アフィリエイト">アフィリエイト</button>
+      <button class="filter-btn" data-value="固定案件">固定案件</button>
+      <button class="filter-btn" data-value="TikTokShop">TikTokShop</button>
+      <button class="filter-btn" data-value="楽天アフィ">楽天アフィ</button>
+    </div>
+    <div class="filter-row" id="genre-filter">
+      <span class="filter-label">ジャンル</span>
+      <button class="filter-btn active" data-value="all">すべて</button>
+      <button class="filter-btn" data-value="美容・スキンケア">美容・スキンケア</button>
+      <button class="filter-btn" data-value="ダイエット">ダイエット</button>
+      <button class="filter-btn" data-value="副業">副業</button>
+      <button class="filter-btn" data-value="ライフスタイル">ライフスタイル</button>
+      <button class="filter-btn" data-value="金融">金融</button>
+      <button class="filter-btn" data-value="生活便利グッズ">生活便利グッズ</button>
+      <button class="filter-btn" data-value="サブスク・デジタル商品">サブスク・デジタル商品</button>
+      <button class="filter-btn" data-value="恋愛・占い・自己啓発（情報商材系）">恋愛・占い系</button>
+    </div>
+  </div>
+</div>
+
+<div class="sort-wrap">
+  <span class="sort-label" id="case-count"></span>
+  <select class="sort-select" id="sort-select" onchange="applyFilters()">
+    <option value="recommend">おすすめ度順</option>
+    <option value="newest">新着順</option>
+  </select>
+</div>
+
+<main>
+  <div id="loading"><div class="spinner"></div>データを読み込み中...</div>
+  <div id="error">データの読み込みに失敗しました。<br>スプレッドシートの公開設定を確認してください。</div>
+  <div id="grid"></div>
+  <div id="empty">該当する案件が見つかりませんでした。</div>
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modal-content">
+    <div class="modal-header">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-badges" id="modal-badges"></div>
+      <div class="modal-title" id="modal-title"></div>
+      <div class="modal-asp" id="modal-asp"></div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-grid">
+        <div class="modal-info"><div class="modal-info-label">報酬単価</div><div class="modal-info-value" id="modal-reward" style="color:var(--accent)"></div></div>
+        <div class="modal-info"><div class="modal-info-label">成果条件</div><div class="modal-info-value" id="modal-condition"></div></div>
+        <div class="modal-info"><div class="modal-info-label">フォロワー相性</div><div class="modal-info-value" id="modal-follower"></div></div>
+        <div class="modal-info"><div class="modal-info-label">案件タイプ</div><div class="modal-info-value" id="modal-type"></div></div>
+      </div>
+      <div class="modal-stars" id="modal-stars"></div>
+      <div class="modal-section" id="modal-notes-wrap">
+        <div class="modal-section-title">注意点</div>
+        <div class="modal-text" id="modal-notes"></div>
+      </div>
+      <div class="modal-section" id="modal-appeal-wrap">
+        <div class="modal-section-title">推奨訴求例</div>
+        <div class="modal-text" id="modal-appeal"></div>
+      </div>
+      <div class="modal-poster" id="modal-poster"></div>
+      <div class="modal-divider"></div>
+    </div>
+    <div class="disqus-wrap">
+      <div class="disqus-title" id="disqus-label">口コミ・コメント</div>
+      <div id="disqus_thread"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  設定：以下2つを変更してください
+// ============================================================
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSUNyKiOY-TNziK1dAIbFPkp5DIlbzFiFxNgyYm5m-GLzbdapj8_V6ldwDL_rg77csyOf4XFCgjpx_V/pub?gid=1726004497&single=true&output=csv";
+const DISQUS_SHORTNAME = "monetize-cases";
+const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfbtfGEP3nrbsUP9Z8j45vuNnXJS3Nvy_grPmcbxU4wqSJ_rA/viewform";
+// ============================================================
+
+let allCases = [];
+let currentType = "all";
+let currentGenre = "all";
+let disqusLoaded = false;
+let currentPageId = "";
+
+async function loadData() {
+  if (SHEET_URL === "YOUR_SHEET_URL_HERE") {
+    document.getElementById("loading").style.display = "none";
+    renderSampleData();
+    return;
+  }
+  try {
+    const res = await fetch(SHEET_URL);
+    if (!res.ok) throw new Error();
+    const rows = parseCSV(await res.text()).slice(1).filter(r => r[3]?.trim());
+    allCases = rows.map(r => ({
+      timestamp: r[0]||"",
+      poster:    r[1]||"",
+      type:      r[2]||"",
+      name:      r[3]||"",
+      genre:     r[4]||"",
+      reward:    r[5]||"",
+      condition: r[6]||"",
+      follower:  r[7]||"",
+      asp:       r[8]||"",
+      stars:     r[9]||"",
+      notes:     r[10]||"",
+      appeal:    r[11]||"",
+    }));
+    document.getElementById("loading").style.display = "none";
+    applyFilters();
+  } catch {
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("error").style.display = "block";
+  }
+}
+
+function parseCSV(text) {
+  return text.trim().split("\n").map(line => {
+    const cols = []; let cur = "", inQ = false;
+    for (const c of line) {
+      if (c === '"') { inQ = !inQ; continue; }
+      if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ""; continue; }
+      cur += c;
+    }
+    cols.push(cur.trim());
+    return cols;
+  });
+}
+
+function renderSampleData() {
+  allCases = [
+    { timestamp:"2025/10/01", poster:"さくら", type:"アフィリエイト", name:"〇〇美容サプリ", genre:"美容・スキンケア", reward:"3,000円/件", condition:"購入で成約", follower:"美容系・女性向け", asp:"A8.net", stars:"★★★★★", notes:"薬機法に注意。効果効能の表現はNG。", appeal:"体験談訴求 / ビフォーアフター投稿" },
+    { timestamp:"2025/10/05", poster:"けんた", type:"固定案件", name:"パーソナルジム〇〇", genre:"ダイエット", reward:"50,000円/固定", condition:"投稿1本", follower:"1万人以上推奨", asp:"DM依頼", stars:"★★★★☆", notes:"投稿内容の事前確認が必要。", appeal:"体験談訴求 / 写真映え重視" },
+    { timestamp:"2025/10/10", poster:"ゆいな", type:"アフィリエイト", name:"〇〇オンラインスクール", genre:"副業", reward:"10,000円/件", condition:"無料登録", follower:"副業・スキルアップ系", asp:"Three With", stars:"★★★☆☆", notes:"誇大表現NG。実績訴求は要注意。", appeal:"悩み訴求 / 比較訴求" },
+    { timestamp:"2025/11/01", poster:"りな", type:"楽天アフィ", name:"〇〇美容家電", genre:"美容・スキンケア", reward:"報酬率3%", condition:"購入で成約", follower:"美容・家電好き", asp:"楽天アフィリエイト", stars:"★★★★☆", notes:"商品リンクは最新のものを使用すること。", appeal:"レビュー訴求 / 比較投稿" },
+    { timestamp:"2025/11/15", poster:"みほ", type:"TikTokShop", name:"〇〇ダイエット茶", genre:"ダイエット", reward:"15%/件", condition:"購入で成約", follower:"ダイエット・健康系", asp:"TikTokShop", stars:"★★★★★", appeal:"ビフォーアフター / 飲み方動画" },
+  ];
+  applyFilters();
+}
+
+function starsToNum(s) {
+  return (s||"").split("★").length - 1;
+}
+
+function applyFilters() {
+  const sort = document.getElementById("sort-select").value;
+  let filtered = allCases.filter(c =>
+    (currentType === "all" || c.type === currentType) &&
+    (currentGenre === "all" || c.genre === currentGenre)
+  );
+  if (sort === "recommend") {
+    filtered.sort((a, b) => starsToNum(b.stars) - starsToNum(a.stars));
+  } else {
+    filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  }
+  renderCards(filtered);
+}
+
+function renderCards(cases) {
+  const grid = document.getElementById("grid");
+  const empty = document.getElementById("empty");
+  const count = document.getElementById("case-count");
+  grid.innerHTML = "";
+  if (!cases.length) {
+    empty.style.display = "block";
+    grid.classList.remove("visible");
+    count.textContent = "";
+    return;
+  }
+  empty.style.display = "none";
+  count.textContent = cases.length + " 件";
+  cases.forEach((c, i) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.style.animationDelay = (i * 40) + "ms";
+    const typeBadgeClass = "badge badge-type-" + c.type;
+    card.innerHTML = `
+      <div class="card-top">
+        <div class="card-badges">
+          <span class="${typeBadgeClass}">${esc(c.type)}</span>
+          ${c.genre ? `<span class="badge badge-genre">${esc(c.genre)}</span>` : ""}
+        </div>
+        <div class="card-title">${esc(c.name)}</div>
+        <div class="card-asp">${esc(c.asp)}</div>
+        <div class="card-info">
+          <div class="info-item"><span class="info-label">報酬単価</span><span class="info-value highlight">${esc(c.reward)}</span></div>
+          <div class="info-item"><span class="info-label">成果条件</span><span class="info-value">${esc(c.condition)}</span></div>
+          <div class="info-item"><span class="info-label">フォロワー相性</span><span class="info-value">${esc(c.follower)}</span></div>
+          <div class="info-item"><span class="info-label">おすすめ度</span><span class="info-value">${esc(c.stars)}</span></div>
+        </div>
+      </div>
+      <div class="card-bottom">
+        <div class="stars">${esc(c.stars)}</div>
+        <span class="detail-link">詳細・口コミを見る →</span>
+      </div>`;
+    card.addEventListener("click", () => openModal(c));
+    grid.appendChild(card);
+  });
+  grid.classList.add("visible");
+}
+
+function openModal(c) {
+  document.getElementById("modal-badges").innerHTML =
+    `<span class="modal-badge">${esc(c.type)}</span>${c.genre ? `<span class="modal-badge">${esc(c.genre)}</span>` : ""}`;
+  document.getElementById("modal-title").textContent = c.name;
+  document.getElementById("modal-asp").textContent = c.asp;
+  document.getElementById("modal-reward").textContent = c.reward;
+  document.getElementById("modal-condition").textContent = c.condition;
+  document.getElementById("modal-follower").textContent = c.follower;
+  document.getElementById("modal-type").textContent = c.type;
+  document.getElementById("modal-stars").textContent = c.stars;
+  document.getElementById("modal-poster").textContent = c.poster ? "投稿者：" + c.poster : "";
+
+  const notesWrap = document.getElementById("modal-notes-wrap");
+  const appealWrap = document.getElementById("modal-appeal-wrap");
+  if (c.notes) { document.getElementById("modal-notes").textContent = c.notes; notesWrap.style.display = "block"; }
+  else { notesWrap.style.display = "none"; }
+  if (c.appeal) { document.getElementById("modal-appeal").textContent = c.appeal; appealWrap.style.display = "block"; }
+  else { appealWrap.style.display = "none"; }
+
+  document.getElementById("disqus-label").textContent = "口コミ・コメント（" + c.name + "）";
+
+  const pageId = c.name.replace(/\s/g, "-");
+  if (DISQUS_SHORTNAME !== "YOUR_DISQUS_SHORTNAME") {
+    loadDisqus(pageId, c.name);
+  } else {
+    document.getElementById("disqus_thread").innerHTML =
+      `<div style="padding:20px;background:var(--surface);border-radius:10px;font-size:13px;color:var(--text-dim);text-align:center;">DisqusのShortnameを設定するとここにコメント欄が表示されます</div>`;
+  }
+
+  document.getElementById("modal").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function loadDisqus(pageId, title) {
+  if (currentPageId === pageId && disqusLoaded) return;
+  currentPageId = pageId;
+  window.disqus_config = function() {
+    this.page.url = window.location.href + "#" + pageId;
+    this.page.identifier = pageId;
+    this.page.title = title;
+  };
+  if (disqusLoaded && window.DISQUS) {
+    DISQUS.reset({ reload: true, config: window.disqus_config });
+  } else {
+    const s = document.createElement("script");
+    s.src = "https://" + DISQUS_SHORTNAME + ".disqus.com/embed.js";
+    s.setAttribute("data-timestamp", +new Date());
+    document.head.appendChild(s);
+    disqusLoaded = true;
+  }
+}
+
+function closeModal() {
+  document.getElementById("modal").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById("modal")) closeModal();
+}
+
+// Filter buttons
+document.getElementById("type-filter").addEventListener("click", e => {
+  if (!e.target.dataset.value) return;
+  currentType = e.target.dataset.value;
+  document.querySelectorAll("#type-filter .filter-btn").forEach(b => b.classList.remove("active"));
+  e.target.classList.add("active");
+  applyFilters();
+});
+document.getElementById("genre-filter").addEventListener("click", e => {
+  if (!e.target.dataset.value) return;
+  currentGenre = e.target.dataset.value;
+  document.querySelectorAll("#genre-filter .filter-btn").forEach(b => b.classList.remove("active"));
+  e.target.classList.add("active");
+  applyFilters();
+});
+
+function esc(s) {
+  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// フォームURLをボタンに設定
+document.querySelector(".submit-btn").href = FORM_URL;
+
+loadData();
+</script>
+</body>
+</html>
