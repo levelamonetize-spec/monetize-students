@@ -241,7 +241,8 @@ async function loadData() {
     return;
   }
   try {
-    const res = await fetch(SHEET_URL);
+    const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(SHEET_URL);
+    const res = await fetch(proxyUrl);
     if (!res.ok) throw new Error();
     const rows = parseCSV(await res.text()).slice(1).filter(r => r[3]?.trim());
     allCases = rows.map(r => ({
