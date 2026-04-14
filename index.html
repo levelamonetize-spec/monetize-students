@@ -213,7 +213,7 @@
 //  ここだけ変更してください
 //  スプレッドシートを「ウェブに公開」した後のURLを貼り付け
 // ============================================================
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQI1o92BJ2214GWNluo_llAlhas4hmCVO8iHL_GmuGhOpLawH7j4HKz2MKa6nAOnNmzY99OMGJgDb5N/pub?gid=852473836&single=true&output=csv";
+const SHEET_URL = "YOUR_SHEET_URL_HERE";
 // ============================================================
 
 let allStudents = [];
@@ -223,7 +223,8 @@ async function loadData() {
   renderSampleData();
   if (SHEET_URL === "YOUR_SHEET_URL_HERE") return;
   try {
-    const res = await fetch(SHEET_URL);
+    const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(SHEET_URL);
+    const res = await fetch(proxyUrl);
     if (!res.ok) throw new Error();
     const rows = parseCSV(await res.text()).slice(1).filter(r => r[1]?.trim());
     allStudents = rows.map(r => ({
