@@ -256,13 +256,7 @@ function parseCSV(text) {
 }
 
 function renderSampleData() {
-  allStudents = [
-    { name:"さくら",  ig:"sakura_lifestyle", genre:"ライフスタイル", monetize:"アフィリエイト" },
-    { name:"ゆいな",  ig:"yuina_food",        genre:"レシピ",         monetize:"PR案件" },
-    { name:"けんた",  ig:"kenta_fitness",     genre:"ダイエット",     monetize:"自社商品" },
-    { name:"みほ",    ig:"miho_travel",        genre:"おでかけ/スポット", monetize:"アフィリエイト" },
-    { name:"りな",    ig:"rina_beauty",        genre:"美容",           monetize:"PR案件" },
-  ];
+  allStudents = [];
   renderFilters();
   renderCards(allStudents);
 }
