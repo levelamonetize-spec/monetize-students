@@ -213,7 +213,7 @@
 //  ここだけ変更してください
 //  スプレッドシートを「ウェブに公開」した後のURLを貼り付け
 // ============================================================
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQI1o92BJ2214GWNluo_llAlhas4hmCVO8iHL_GmuGhOpLawH7j4HKz2MKa6nAOnNmzY99OMGJgDb5N/pub?gid=852473836&single=true&output=csv";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbyBJ5i4mDLH2PCPA5SnmkwMZJ3KtqRvxh9CFLF7Vbyvk7B5x__AiHaxpSkYrzwH2MM/exec";
 // ============================================================
 
 let allStudents = [];
@@ -221,29 +221,17 @@ let allStudents = [];
 async function loadData() {
   document.getElementById("loading").style.display = "none";
   renderSampleData();
-  if (SHEET_URL === "YOUR_SHEET_URL_HERE") return;
   try {
-    const proxies = [
-      "https://api.allorigins.win/raw?url=",
-      "https://corsproxy.io/?",
-    ];
-    let res = null;
-    for (const proxy of proxies) {
-      try {
-        res = await fetch(proxy + encodeURIComponent(SHEET_URL));
-        if (res.ok) break;
-      } catch {}
-    }
-    if (!res || !res.ok) throw new Error();
-    const rows = parseCSV(await res.text()).slice(1).filter(r => r[1]?.trim());
-    allStudents = rows.map(r => ({
-      timestamp: r[0]||"",
-      name:      r[1]||"",
-      ig:        r[2]||"",
-      genre:     r[3]||"",
-      monetize:  r[4]||"",
-      image:     r[5]||"",
-    }));
+    const res = await fetch(GAS_URL);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    allStudents = data.map(r => ({
+      name:     r["アカウント名"]||"",
+      ig:       r["ユーザーネーム"]||"",
+      genre:    r["ジャンル"]||"",
+      monetize: r["マネタイズ方法"]||"",
+      image:    r["インスタのアイコン画像をアップしてください"]||"",
+    })).filter(r => r.name.trim());
     renderFilters();
     renderCards(allStudents);
   } catch {
