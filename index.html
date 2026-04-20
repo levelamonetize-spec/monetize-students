@@ -223,9 +223,18 @@ async function loadData() {
   renderSampleData();
   if (SHEET_URL === "YOUR_SHEET_URL_HERE") return;
   try {
-    const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(SHEET_URL);
-    const res = await fetch(proxyUrl);
-    if (!res.ok) throw new Error();
+    const proxies = [
+      "https://api.allorigins.win/raw?url=",
+      "https://corsproxy.io/?",
+    ];
+    let res = null;
+    for (const proxy of proxies) {
+      try {
+        res = await fetch(proxy + encodeURIComponent(SHEET_URL));
+        if (res.ok) break;
+      } catch {}
+    }
+    if (!res || !res.ok) throw new Error();
     const rows = parseCSV(await res.text()).slice(1).filter(r => r[1]?.trim());
     allStudents = rows.map(r => ({
       timestamp: r[0]||"",
