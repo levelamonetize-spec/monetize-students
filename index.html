@@ -223,7 +223,7 @@ async function loadData() {
   renderSampleData();
   if (SHEET_URL === "YOUR_SHEET_URL_HERE") return;
   try {
-    const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(SHEET_URL);
+    const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(SHEET_URL);
     const res = await fetch(proxyUrl);
     if (!res.ok) throw new Error();
     const rows = parseCSV(await res.text()).slice(1).filter(r => r[1]?.trim());
