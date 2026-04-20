@@ -375,7 +375,7 @@ function openModal(c) {
 
   document.getElementById("disqus-label").textContent = "口コミ・コメント（" + c.name + "）";
 
-  const pageId = c.name.replace(/\s/g, "-");
+  const pageId = (c.timestamp + "-" + c.name).replace(/[\s\/\\:*?"<>|]/g, "-").substring(0, 80);
   if (DISQUS_SHORTNAME !== "YOUR_DISQUS_SHORTNAME") {
     loadDisqus(pageId, c.name);
   } else {
