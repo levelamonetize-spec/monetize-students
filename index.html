@@ -231,7 +231,8 @@ async function loadData() {
       genre:    r["ジャンル"]||"",
       monetize: r["マネタイズ方法"]||"",
       image:    r["インスタのアイコン画像をアップしてください"]||"",
-    })).filter(r => r.name.trim());
+      visible:  r["列1"]||"",
+    })).filter(r => r.name.trim() && r.visible !== "0");
     renderFilters();
     renderCards(allStudents);
   } catch {
