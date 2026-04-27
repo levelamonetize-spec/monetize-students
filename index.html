@@ -232,7 +232,7 @@ async function loadData() {
       monetize: r["マネタイズ方法"]||"",
       image:    r["インスタのアイコン画像をアップしてください"]||"",
       visible:  r["列1"]||"",
-    })).filter(r => r.name.trim() && r.visible !== "0");
+    })).filter(r => r.name.trim() && String(r.visible).trim() !== "0");
     renderFilters();
     renderCards(allStudents);
   } catch {
